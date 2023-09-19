@@ -7,6 +7,8 @@ public class MyBlockingQueue<T> {
 
     private int maxSize = 10;
     private final List<T> myBlockingQueue = new LinkedList<>();
+    private Object notFull = new Object();
+    private Object notEmpty = new Object();
 
     public MyBlockingQueue(int maxSize) {
         this.maxSize = maxSize;
@@ -15,29 +17,25 @@ public class MyBlockingQueue<T> {
     public synchronized T take() {
         while (myBlockingQueue.isEmpty()) {
             try {
-                wait();
+                notEmpty.wait();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        if (myBlockingQueue.size() == maxSize) {
-            notifyAll();
-        }
-        return myBlockingQueue.remove(0);
-
+        final T removed = myBlockingQueue.remove(0);
+        notFull.notifyAll();
+        return removed;
     }
 
     public synchronized void put(T obj) {
         while (myBlockingQueue.size() == maxSize) {
             try {
-                wait();
+                notFull.wait();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        if (myBlockingQueue.isEmpty()) {
-            notifyAll();
-        }
         myBlockingQueue.add(obj);
+        notEmpty.notifyAll();
     }
 }
